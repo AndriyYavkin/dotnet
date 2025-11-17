@@ -12,3 +12,4 @@ D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\refint\lab.dll
 D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.pdb
 D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.genruntimeconfig.cache
 D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\ref\lab.dll
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.sourcelink.json
