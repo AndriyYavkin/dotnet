@@ -1,0 +1,14 @@
+D:\University\Methods\Labs\dotnet\lab\bin\Debug\net9.0\lab.exe
+D:\University\Methods\Labs\dotnet\lab\bin\Debug\net9.0\lab.deps.json
+D:\University\Methods\Labs\dotnet\lab\bin\Debug\net9.0\lab.runtimeconfig.json
+D:\University\Methods\Labs\dotnet\lab\bin\Debug\net9.0\lab.dll
+D:\University\Methods\Labs\dotnet\lab\bin\Debug\net9.0\lab.pdb
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.GeneratedMSBuildEditorConfig.editorconfig
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.AssemblyInfoInputs.cache
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.AssemblyInfo.cs
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.csproj.CoreCompileInputs.cache
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.dll
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\refint\lab.dll
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.pdb
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\lab.genruntimeconfig.cache
+D:\University\Methods\Labs\dotnet\lab\obj\Debug\net9.0\ref\lab.dll
