@@ -33,7 +33,7 @@ class Program
 
             double maxVal = 0.0;
             int p = -1, q = -1;
-            double sumSqNonDiag = 0.0; 
+            double sumSqNonDiag = 0.0;
 
             for (int i = 0; i < n; i++)
             {
@@ -42,7 +42,7 @@ class Program
                     if (i != j)
                     {
                         sumSqNonDiag += A[i, j] * A[i, j];
-                        
+
                         if (i < j && Math.Abs(A[i, j]) > maxVal)
                         {
                             maxVal = Math.Abs(A[i, j]);
@@ -64,8 +64,8 @@ class Program
             double Apq = A[p, q];
 
             double theta = (Aqq - App) / (2 * Apq);
-            double t; 
-            
+            double t;
+
             if (theta >= 0)
                 t = 1.0 / (theta + Math.Sqrt(theta * theta + 1));
             else
@@ -74,7 +74,7 @@ class Program
             double c = 1.0 / Math.Sqrt(1 + t * t);
             double s = c * t;
 
-            double phiRad = Math.Atan(t); 
+            double phiRad = Math.Atan(t);
             double phiDeg = phiRad * (180 / Math.PI);
 
             Console.WriteLine($"--- Ітерація {iteration} ---");
@@ -84,18 +84,18 @@ class Program
 
             Console.WriteLine("Матриця обертання U:");
             double[,] RotationU = new double[n, n];
-            for(int i=0; i<n; i++) RotationU[i,i] = 1.0;
-            
+            for (int i = 0; i < n; i++) RotationU[i, i] = 1.0;
+
             RotationU[p, p] = c;
             RotationU[q, q] = c;
             RotationU[p, q] = -s;
             RotationU[q, p] = s;
-            
+
             PrintMatrix(RotationU, n);
 
             double prevApp = A[p, p];
             double prevAqq = A[q, q];
-            
+
             A[p, p] = c * c * prevApp - 2 * s * c * Apq + s * s * prevAqq;
             A[q, q] = s * s * prevApp + 2 * s * c * Apq + c * c * prevAqq;
             A[p, q] = 0.0;
@@ -127,11 +127,11 @@ class Program
 
             Console.WriteLine("Матриця A після обертання:");
             PrintMatrix(A, n);
-            Console.WriteLine(); 
+            Console.WriteLine();
         }
 
         Console.WriteLine($"\nМетод зійшовся за {iteration} ітерацій (але цикл зупинився перед {iteration + 1}).");
-        
+
         Console.WriteLine("\n=== ФІНАЛЬНІ РЕЗУЛЬТАТИ ===");
         Console.WriteLine("Власні числа (діагональ матриці A):");
         Console.Write("[ ");
@@ -154,7 +154,7 @@ class Program
             for (int j = 0; j < n; j++)
             {
                 double val = matrix[i, j];
-                if (Math.Abs(val) < 0.00001) val = 0.0; // Прибираємо -0.0000
+                if (Math.Abs(val) < 0.00001) val = 0.0;
                 Console.Write($"{val,10:F4} ");
             }
             Console.WriteLine();
