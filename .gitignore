@@ -1,0 +1,7 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/dotnet
+/.vs/ProjectEvaluation
+/lab/obj/Debug/net9.0/lab.AssemblyInfo.cs
