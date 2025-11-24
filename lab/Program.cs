@@ -180,8 +180,8 @@ namespace NumericalMethodsLab1
         public static double[] Solve(double[,] A, double[] b)
         {
             int n = b.Length;
-            double[,] S = new double[n, n]; 
-            double[] D = new double[n];    
+            double[,] S = new double[n, n];
+            double[] D = new double[n];
 
             Console.WriteLine("Побудова матриці S (верхня трикутна)...");
 
@@ -189,65 +189,84 @@ namespace NumericalMethodsLab1
             {
                 double sumDiag = 0;
                 for (int k = 0; k < i; k++)
-                    sumDiag += S[k, i] * S[k, i];
+                {
+                    sumDiag += S[k, i] * S[k, i] * D[k];
+                }
 
                 double val = A[i, i] - sumDiag;
-                if (val < 0) throw new Exception("Мінор від'ємний. Метод вимагає додатно визначеної матриці.");
-                
-                S[i, i] = Math.Sqrt(val);
+                D[i] = Math.Sign(val);
+                S[i, i] = Math.Sqrt(Math.Abs(val));
+
+                if (Math.Abs(S[i, i]) < 1e-10)
+                    throw new Exception($"Нульовий діагональний елемент на кроці {i}. Матриця вироджена.");
 
                 for (int j = i + 1; j < n; j++)
                 {
                     double sumRow = 0;
                     for (int k = 0; k < i; k++)
-                        sumRow += S[k, i] * S[k, j];
+                    {
+                        sumRow += S[k, i] * D[k] * S[k, j];
+                    }
 
-                    S[i, j] = (A[i, j] - sumRow) / S[i, i];
+                    S[i, j] = (A[i, j] - sumRow) / (D[i] * S[i, i]);
                 }
-                
-                Console.WriteLine($"Рядок {i + 1} матриці S знайдено:");
-                PrintTriangularMatrix(S, i + 1);
+
+                Console.WriteLine($"-> Крок {i + 1}. Знайдено рядок {i + 1}. D[{i + 1}] = {D[i]}");
+                PrintTriangularMatrix(S, n);
+                Console.WriteLine();
             }
 
-            Console.WriteLine("\nРозв'язок S^T * y = b:");
+            double[] z = new double[n];
+            for (int i = 0; i < n; i++)
+            {
+                double sumST = 0;
+                for (int k = 0; k < i; k++)
+                    sumST += S[k, i] * z[k];
+
+                z[i] = (b[i] - sumST) / S[i, i];
+            }
+            PrintVec(z, "z");
+
             double[] y = new double[n];
             for (int i = 0; i < n; i++)
             {
-                double sum = 0;
-                for (int k = 0; k < i; k++)
-                    sum += S[k, i] * y[k]; 
-                
-                y[i] = (b[i] - sum) / S[i, i];
+                y[i] = z[i] / D[i];
             }
-            PrintVec(y, "y");
 
-            Console.WriteLine("Розв'язок S * x = y:");
             double[] x = new double[n];
             for (int i = n - 1; i >= 0; i--)
             {
                 double sum = 0;
                 for (int k = i + 1; k < n; k++)
+                {
                     sum += S[i, k] * x[k];
-                
+                }
+
                 x[i] = (y[i] - sum) / S[i, i];
             }
-            PrintVec(x, "x");
+
             return x;
         }
 
         static void PrintTriangularMatrix(double[,] S, int rowsToShow)
         {
             int n = S.GetLength(0);
-            for(int i=0; i<rowsToShow; i++)
+            for (int i = 0; i < rowsToShow; i++)
             {
-                for(int j=0; j<n; j++) Console.Write($"{S[i,j],8:F4} ");
+                Console.Write("  ");
+                for (int j = 0; j < n; j++)
+                {
+                    double val = Math.Abs(S[i, j]) < 1e-10 ? 0.0 : S[i, j];
+                    Console.Write($"{val,8:F4} ");
+                }
                 Console.WriteLine();
             }
         }
+
         static void PrintVec(double[] v, string name)
         {
             Console.Write($"{name} = [ ");
-            foreach(var val in v) Console.Write($"{val:F4} ");
+            foreach (var val in v) Console.Write($"{val:F4} ");
             Console.WriteLine("]");
         }
     }
