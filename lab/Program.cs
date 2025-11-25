@@ -47,10 +47,12 @@ class Program
         //МЕТОД ЛАГРАНЖА
         PrintHeader("1. МЕТОД ЛАГРАНЖА");
 
-        Console.WriteLine("Приклад обчислення значень вузлів:");
-        Console.WriteLine($"x_0 = {xNodesLag[0]:F1} => f(x_0) = sqrt({xNodesLag[0]:F1}) = {yNodesLag[0]:F6}");
-        Console.WriteLine($"x_1 = {xNodesLag[1]:F1} => f(x_1) = sqrt({xNodesLag[1]:F1}) = {yNodesLag[1]:F6}");
-        Console.WriteLine("...");
+        Console.WriteLine("Аналітичний розв'язок (значення у вузлах):");
+
+        for (int i = 0; i < xNodesLag.Length; i++)
+        {
+            Console.WriteLine($"x_{i} = {xNodesLag[i]:F1} => f(x_{i}) = sqrt({xNodesLag[i]:F1}) = {yNodesLag[i]:F6}");
+        }
         Console.WriteLine();
 
         Console.WriteLine($"Таблиця вузлів ({xNodesLag.Length} точок):");
@@ -63,7 +65,6 @@ class Program
         Console.WriteLine($"\nПоліном 14-го степеня.");
 
 
-        // МЕТОД ЕРМІТА
         PrintHeader("2. МЕТОД ЕРМІТА (З ТРИКУТНОЮ ТАБЛИЦЕЮ)");
 
         var (hZ, hCoeffs) = BuildHermiteTableVerbose(xHermiteBase, hMultiplicities);
@@ -74,7 +75,6 @@ class Program
             Console.Write($" + ({hCoeffs[i]:F4}) * product...");
         Console.WriteLine(" + ...");
 
-        // РОЗРАХУНОК
         int plotPoints = 500;
         double[] xPlot = GenerateLinspace(a, b, plotPoints);
 
@@ -90,7 +90,6 @@ class Program
             yHermite[i] = EvalHermite(xi, hZ, hCoeffs);
         }
 
-        // АНАЛІЗ В КОНТРОЛЬНІЙ ТОЧЦІ
         double xTest = 5.55;
         double valExact = F(xTest);
         double valLag = LagrangeManual(xTest, xNodesLag, yNodesLag);
@@ -107,8 +106,7 @@ class Program
         Console.WriteLine(new string('-', 75));
 
 
-        // ГРАФІКИ
-        // 1. Лагранж
+        //Лагранж
         var plt1 = new Plot();
         plt1.Title("Метод Лагранжа (15 точок)");
         plt1.XLabel("X"); plt1.YLabel("Y");
@@ -161,7 +159,6 @@ class Program
         plt2.ShowLegend();
         plt2.SavePng("plot_hermite.png", 1000, 600);
         Console.WriteLine(" -> plot_hermite.png");
-
     }
 
     static double LagrangeManual(double x, double[] nodes, double[] vals)
@@ -198,15 +195,27 @@ class Program
             }
         }
 
-        Console.WriteLine("\n>>> ТАБЛИЦЯ РОЗДІЛЕНИХ РІЗНИЦЬ (Фрагмент) <<<");
-        int rL = Math.Min(N, 10); int cL = Math.Min(N, 5);
-        Console.Write($"{"z_i",-8} | {"f(z)",-10} | ");
-        for (int j = 1; j < cL; j++) Console.Write($"{"Ord " + j,-10} | ");
-        Console.WriteLine("\n" + new string('-', 70));
+        Console.WriteLine("\n>>> ПОВНА ТАБЛИЦЯ РОЗДІЛЕНИХ РІЗНИЦЬ <<<");
+
+        int rL = N;
+        int cL = N;
+
+        Console.Write($"{"z_i",-6} | {"f(z)",-8} | ");
+        for (int j = 1; j < cL; j++) Console.Write($"{"O" + j,-8} | ");
+        Console.WriteLine("\n" + new string('-', 10 + cL * 11));
+
         for (int i = 0; i < rL; i++)
         {
-            Console.Write($"{z[i],-8:F2} | {table[i, 0],-10:F4} | ");
-            for (int j = 1; j < cL && j < N - i; j++) Console.Write($"{table[i, j],-10:F4} | ");
+            Console.Write($"{z[i],-6:F1} | {table[i, 0],-8:F3} | ");
+            for (int j = 1; j < cL && j < N - i; j++)
+            {
+                double val = table[i, j];
+                string sVal = (Math.Abs(val) > 1000 || (Math.Abs(val) < 0.001 && val != 0))
+                    ? $"{val:E1}"
+                    : $"{val:F3}";
+
+                Console.Write($"{sVal,-8} | ");
+            }
             Console.WriteLine();
         }
 
