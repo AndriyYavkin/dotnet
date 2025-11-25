@@ -69,7 +69,7 @@ class Program
 
         var (hZ, hCoeffs) = BuildHermiteTableVerbose(xHermiteBase, hMultiplicities);
 
-        Console.WriteLine("\nФормула полінома Ньютона (Ерміта):");
+        Console.WriteLine("\nФормула полінома Ерміта:");
         Console.Write($"H(x) = {hCoeffs[0]:F4}");
         for (int i = 1; i < Math.Min(5, hCoeffs.Length); i++)
             Console.Write($" + ({hCoeffs[i]:F4}) * product...");
@@ -126,7 +126,6 @@ class Program
 
         plt1.ShowLegend();
         plt1.SavePng("plot_lagrange.png", 1000, 600);
-        Console.WriteLine(" -> plot_lagrange.png");
 
         // Ерміт
         var plt2 = new Plot();
@@ -158,7 +157,6 @@ class Program
         }
         plt2.ShowLegend();
         plt2.SavePng("plot_hermite.png", 1000, 600);
-        Console.WriteLine(" -> plot_hermite.png");
     }
 
     static double LagrangeManual(double x, double[] nodes, double[] vals)
@@ -195,7 +193,7 @@ class Program
             }
         }
 
-        Console.WriteLine("\n>>> ПОВНА ТАБЛИЦЯ РОЗДІЛЕНИХ РІЗНИЦЬ <<<");
+        Console.WriteLine("\n>>> ТАБЛИЦЯ РОЗДІЛЕНИХ РІЗНИЦЬ <<<");
 
         int rL = N;
         int cL = N;
