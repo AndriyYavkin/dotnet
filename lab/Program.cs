@@ -1,324 +1,241 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using ScottPlot;
 
-namespace NumericalMethodsLab1
+namespace Lab4;
+
+class Program
 {
-    class Program
+    static double F(double x) => Math.Sqrt(x);
+
+    static double GetDerivative(int n, double x)
     {
-        static void Main(string[] args)
+        if (n == 0) return Math.Sqrt(x);
+
+        double coeff = 1.0;
+        for (int k = 0; k < n; k++)
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            coeff *= (0.5 - k);
+        }
+        return coeff * Math.Pow(x, 0.5 - n);
+    }
 
-            // --- 1. Вхідні дані ---
-            double[,] A = {
-                { 6,  1,  1, -1 },
-                { 1,  8,  1,  2 },
-                { 1,  1,  7,  1 },
-                { -1, 2,  1,  9 }
-            };
-            
-            double[] b = { 7, 12, 10, 11 };
+    static void Main(string[] args)
+    {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-            Console.WriteLine("=== Вхідна система ===");
-            PrintSystem(A, b);
-            Console.WriteLine("Перевірка симетрії: " + (MatrixChecker.IsSymmetric(A) ? "Так" : "Ні"));
-            Console.WriteLine("Перевірка діагональної переваги: " + (MatrixChecker.IsDiagonallyDominant(A) ? "Так" : "Ні"));
+        double a = 1.0;
+        double b = 10.0;
+
+        double[] xNodesLag = new double[]
+        {
+            1.0, 1.6, 2.2, 2.9, 3.6,
+            4.2, 4.8, 5.5, 6.1, 6.8,
+            7.4, 8.1, 8.7, 9.3, 10.0
+        };
+        double[] yNodesLag = xNodesLag.Select(F).ToArray();
+
+        double[] xHermiteBase = new double[]
+        {
+            1.0, 2.3, 3.6, 4.9,
+            6.1, 7.4, 8.7, 10.0
+        };
+
+        int[] hMultiplicities = { 4, 4, 4, 4, 4, 4, 4, 1 };
+
+        //МЕТОД ЛАГРАНЖА
+        PrintHeader("1. МЕТОД ЛАГРАНЖА");
+
+        Console.WriteLine("Приклад обчислення значень вузлів:");
+        Console.WriteLine($"x_0 = {xNodesLag[0]:F1} => f(x_0) = sqrt({xNodesLag[0]:F1}) = {yNodesLag[0]:F6}");
+        Console.WriteLine($"x_1 = {xNodesLag[1]:F1} => f(x_1) = sqrt({xNodesLag[1]:F1}) = {yNodesLag[1]:F6}");
+        Console.WriteLine("...");
+        Console.WriteLine();
+
+        Console.WriteLine($"Таблиця вузлів ({xNodesLag.Length} точок):");
+        Console.WriteLine($"{"i",-5} | {"x_i",-10} | {"f(x_i)",-15}");
+        Console.WriteLine(new string('-', 35));
+        for (int i = 0; i < xNodesLag.Length; i++)
+        {
+            Console.WriteLine($"{i,-5} | {xNodesLag[i],-10:F4} | {yNodesLag[i],-15:F6}");
+        }
+        Console.WriteLine($"\nПоліном 14-го степеня.");
+
+
+        // МЕТОД ЕРМІТА
+        PrintHeader("2. МЕТОД ЕРМІТА (З ТРИКУТНОЮ ТАБЛИЦЕЮ)");
+
+        var (hZ, hCoeffs) = BuildHermiteTableVerbose(xHermiteBase, hMultiplicities);
+
+        Console.WriteLine("\nФормула полінома Ньютона (Ерміта):");
+        Console.Write($"H(x) = {hCoeffs[0]:F4}");
+        for (int i = 1; i < Math.Min(5, hCoeffs.Length); i++)
+            Console.Write($" + ({hCoeffs[i]:F4}) * product...");
+        Console.WriteLine(" + ...");
+
+        // РОЗРАХУНОК
+        int plotPoints = 500;
+        double[] xPlot = GenerateLinspace(a, b, plotPoints);
+
+        double[] yExact = new double[plotPoints];
+        double[] yLagrange = new double[plotPoints];
+        double[] yHermite = new double[plotPoints];
+
+        for (int i = 0; i < plotPoints; i++)
+        {
+            double xi = xPlot[i];
+            yExact[i] = F(xi);
+            yLagrange[i] = LagrangeManual(xi, xNodesLag, yNodesLag);
+            yHermite[i] = EvalHermite(xi, hZ, hCoeffs);
+        }
+
+        // АНАЛІЗ В КОНТРОЛЬНІЙ ТОЧЦІ
+        double xTest = 5.55;
+        double valExact = F(xTest);
+        double valLag = LagrangeManual(xTest, xNodesLag, yNodesLag);
+        double valHer = EvalHermite(xTest, hZ, hCoeffs);
+
+        PrintHeader("АНАЛІЗ РЕЗУЛЬТАТІВ");
+        Console.WriteLine($"Контрольна точка x = {xTest}");
+        Console.WriteLine(new string('-', 75));
+        Console.WriteLine($"{"МЕТОД",-15} | {"ЗНАЧЕННЯ P(x)",-20} | {"ПОХИБКА |f-P|",-20}");
+        Console.WriteLine(new string('-', 75));
+        Console.WriteLine($"{"Точне f(x)",-15} | {valExact,-20:F10} | {"-",-20}");
+        Console.WriteLine($"{"Лагранж",-15} | {valLag,-20:F10} | {Math.Abs(valExact - valLag),-20:E4}");
+        Console.WriteLine($"{"Ерміт",-15} | {valHer,-20:F10} | {Math.Abs(valExact - valHer),-20:E4}");
+        Console.WriteLine(new string('-', 75));
+
+
+        // ГРАФІКИ
+        // 1. Лагранж
+        var plt1 = new Plot();
+        plt1.Title("Метод Лагранжа (15 точок)");
+        plt1.XLabel("X"); plt1.YLabel("Y");
+
+        var lineEx1 = plt1.Add.Scatter(xPlot, yExact, Colors.Orange);
+        lineEx1.LegendText = "Exact f(x)";
+        lineEx1.LinePattern = LinePattern.Dashed;
+        lineEx1.LineWidth = 2;
+
+        var lineLag1 = plt1.Add.Scatter(xPlot, yLagrange, Colors.Black);
+        lineLag1.LinePattern = LinePattern.Dotted;
+        lineLag1.LegendText = "Lagrange";
+        lineLag1.LineWidth = 2;
+
+        var scatL = plt1.Add.Scatter(xNodesLag, yNodesLag, Colors.Red);
+        scatL.LineWidth = 0; scatL.MarkerSize = 9; scatL.LegendText = "Nodes";
+
+        plt1.ShowLegend();
+        plt1.SavePng("plot_lagrange.png", 1000, 600);
+        Console.WriteLine(" -> plot_lagrange.png");
+
+        // Ерміт
+        var plt2 = new Plot();
+        plt2.Title("Метод Ерміта (35 умов)");
+        plt2.XLabel("X"); plt2.YLabel("Y");
+
+        var lineEx2 = plt2.Add.Scatter(xPlot, yExact, Colors.Orange);
+        lineEx2.LegendText = "Exact f(x)";
+        lineEx2.LinePattern = LinePattern.Dashed;
+        lineEx2.LineWidth = 2;
+
+        var lineHer2 = plt2.Add.Scatter(xPlot, yHermite, Colors.Blue);
+        lineHer2.LegendText = "Hermite";
+        lineHer2.LinePattern = LinePattern.Dotted;
+        lineHer2.LineWidth = 2;
+
+        for (int i = 0; i < xHermiteBase.Length; i++)
+        {
+            double x = xHermiteBase[i];
+            double y = F(x);
+            int m = hMultiplicities[i];
+            for (int k = 0; k < m; k++)
+            {
+                float size = 14 - (k * 3); if (size < 3) size = 3;
+                var mk = plt2.Add.Marker(x, y);
+                mk.Shape = MarkerShape.OpenCircle; mk.Color = Colors.DarkGreen; mk.Size = size;
+                if (k == m - 1) { mk.Shape = MarkerShape.FilledCircle; mk.Color = Colors.Lime; }
+            }
+        }
+        plt2.ShowLegend();
+        plt2.SavePng("plot_hermite.png", 1000, 600);
+        Console.WriteLine(" -> plot_hermite.png");
+
+    }
+
+    static double LagrangeManual(double x, double[] nodes, double[] vals)
+    {
+        double res = 0; int n = nodes.Length;
+        for (int i = 0; i < n; i++)
+        {
+            double l = 1;
+            for (int j = 0; j < n; j++) if (i != j) l *= (x - nodes[j]) / (nodes[i] - nodes[j]);
+            res += vals[i] * l;
+        }
+        return res;
+    }
+
+    static (double[], double[]) BuildHermiteTableVerbose(double[] nodes, int[] mults)
+    {
+        List<double> zList = new List<double>();
+        for (int i = 0; i < nodes.Length; i++)
+            for (int k = 0; k < mults[i]; k++) zList.Add(nodes[i]);
+        double[] z = zList.ToArray();
+        int N = z.Length;
+        double[,] table = new double[N, N];
+
+        for (int i = 0; i < N; i++) table[i, 0] = F(z[i]);
+
+        for (int j = 1; j < N; j++)
+        {
+            for (int i = 0; i < N - j; i++)
+            {
+                if (Math.Abs(z[i] - z[i + j]) < 1e-9)
+                    table[i, j] = GetDerivative(j, z[i]) / Factorial(j);
+                else
+                    table[i, j] = (table[i + 1, j - 1] - table[i, j - 1]) / (z[i + j] - z[i]);
+            }
+        }
+
+        Console.WriteLine("\n>>> ТАБЛИЦЯ РОЗДІЛЕНИХ РІЗНИЦЬ (Фрагмент) <<<");
+        int rL = Math.Min(N, 10); int cL = Math.Min(N, 5);
+        Console.Write($"{"z_i",-8} | {"f(z)",-10} | ");
+        for (int j = 1; j < cL; j++) Console.Write($"{"Ord " + j,-10} | ");
+        Console.WriteLine("\n" + new string('-', 70));
+        for (int i = 0; i < rL; i++)
+        {
+            Console.Write($"{z[i],-8:F2} | {table[i, 0],-10:F4} | ");
+            for (int j = 1; j < cL && j < N - i; j++) Console.Write($"{table[i, j],-10:F4} | ");
             Console.WriteLine();
-
-            // 2. Метод Гауса
-            Console.WriteLine("======================================");
-            Console.WriteLine("   МЕТОД ГАУСА (по рядкам)");
-            Console.WriteLine("======================================");
-            try
-            {
-                var gaussResult = GaussianSolver.Solve(A.Clone() as double[,], b.Clone() as double[]);
-                Console.WriteLine("\n>> Результат (Гаус):");
-                PrintVector(gaussResult);
-            }
-            catch (Exception ex) { Console.WriteLine($"Помилка: {ex.Message}"); }
-
-            // 3. Метод Квадратного Кореня
-            Console.WriteLine("\n=================================");
-            Console.WriteLine("   МЕТОД КВАДРАТНОГО КОРЕНЯ ");
-            Console.WriteLine("=================================");
-            try
-            {
-                var sqRootResult = SquareRootSolver.Solve(A.Clone() as double[,], b.Clone() as double[]);
-                Console.WriteLine("\n>> Результат (Кв. корінь):");
-                PrintVector(sqRootResult);
-            }
-            catch (Exception ex) { Console.WriteLine($"Помилка: {ex.Message}"); }
-
-            //4. Метод Якобі
-            Console.WriteLine("\n======================================");
-            Console.WriteLine("   МЕТОД ЯКОБІ");
-            Console.WriteLine("======================================");
-            try
-            {
-                Console.Write("Введіть точність (за замовчуванням 0.0001): ");
-                string input = Console.ReadLine();
-                double epsilon = string.IsNullOrEmpty(input) ? 0.0001 : double.Parse(input.Replace('.', ','));
-
-                var jacobiResult = JacobiSolver.Solve(A, b, epsilon);
-                Console.WriteLine($"\n>> Результат (Якобі) за {jacobiResult.Iterations} ітерацій:");
-                PrintVector(jacobiResult.Solution);
-            }
-            catch (Exception ex) { Console.WriteLine($"Помилка: {ex.Message}"); }
-
-            Console.ReadKey();
         }
 
-        static void PrintSystem(double[,] A, double[] b)
-        {
-            int n = b.Length;
-            for (int i = 0; i < n; i++)
-            {
-                Console.Write("| ");
-                for (int j = 0; j < n; j++)
-                {
-                    Console.Write($"{A[i, j],5:0.##} ");
-                }
-                Console.WriteLine($"| {b[i],5:0.##} |");
-            }
-        }
-
-        static void PrintMatrix(double[,] M, string name)
-        {
-            int n = M.GetLength(0);
-            Console.WriteLine($"Матриця {name}:");
-            for (int i = 0; i < n; i++)
-            {
-                for (int j = 0; j < n; j++)
-                {
-                    Console.Write($"{M[i, j],8:F4} ");
-                }
-                Console.WriteLine();
-            }
-        }
-
-        static void PrintVector(double[] x)
-        {
-            for (int i = 0; i < x.Length; i++)
-            {
-                Console.Write($"x{i + 1}={x[i]:F5}; ");
-            }
-            Console.WriteLine();
-        }
+        double[] c = new double[N];
+        for (int i = 0; i < N; i++) c[i] = table[0, i];
+        return (z, c);
     }
 
-    public static class MatrixChecker
+    static double EvalHermite(double x, double[] z, double[] c)
     {
-        public static bool IsDiagonallyDominant(double[,] A)
-        {
-            int n = A.GetLength(0);
-            for (int i = 0; i < n; i++)
-            {
-                double sum = 0;
-                for (int j = 0; j < n; j++) if (i != j) sum += Math.Abs(A[i, j]);
-                if (Math.Abs(A[i, i]) <= sum) return false;
-            }
-            return true;
-        }
-        public static bool IsSymmetric(double[,] A)
-        {
-            int n = A.GetLength(0);
-            for (int i = 0; i < n; i++)
-                for (int j = 0; j < n; j++)
-                    if (Math.Abs(A[i, j] - A[j, i]) > 1e-9) return false;
-            return true;
-        }
+        double res = c[c.Length - 1];
+        for (int i = c.Length - 2; i >= 0; i--) res = res * (x - z[i]) + c[i];
+        return res;
     }
 
-    // Метод Гауса
-    public static class GaussianSolver
+    static double Factorial(int n)
     {
-        public static double[] Solve(double[,] A, double[] b)
-        {
-            int n = b.Length;
-            
-            for (int k = 0; k < n - 1; k++)
-            {
-                Console.WriteLine($"--- Крок прямого ходу {k + 1} ---");
-                for (int i = k + 1; i < n; i++)
-                {
-                    double factor = A[i, k] / A[k, k];
-                    b[i] -= factor * b[k];
-                    for (int j = k; j < n; j++)
-                    {
-                        A[i, j] -= factor * A[k, j];
-                    }
-                }
-                PrintStepMatrix(A, b);
-            }
-
-            double[] x = new double[n];
-            for (int i = n - 1; i >= 0; i--)
-            {
-                double sum = 0;
-                for (int j = i + 1; j < n; j++)
-                {
-                    sum += A[i, j] * x[j];
-                }
-                x[i] = (b[i] - sum) / A[i, i];
-            }
-            return x;
-        }
-
-        static void PrintStepMatrix(double[,] A, double[] b)
-        {
-            int n = b.Length;
-            for (int i = 0; i < n; i++)
-            {
-                for (int j = 0; j < n; j++) Console.Write($"{A[i, j],8:F3} ");
-                Console.WriteLine($" | {b[i],8:F3}");
-            }
-        }
+        double res = 1;
+        for (int i = 2; i <= n; i++) res *= i;
+        return res;
     }
 
-    // Метод Квадратного кореня
-    public static class SquareRootSolver
+    static double[] GenerateLinspace(double start, double end, int count)
     {
-        public static double[] Solve(double[,] A, double[] b)
-        {
-            int n = b.Length;
-            double[,] S = new double[n, n];
-            double[] D = new double[n];
-
-            Console.WriteLine("Побудова матриці S (верхня трикутна)...");
-
-            for (int i = 0; i < n; i++)
-            {
-                double sumDiag = 0;
-                for (int k = 0; k < i; k++)
-                {
-                    sumDiag += S[k, i] * S[k, i] * D[k];
-                }
-
-                double val = A[i, i] - sumDiag;
-                D[i] = Math.Sign(val);
-                S[i, i] = Math.Sqrt(Math.Abs(val));
-
-                if (Math.Abs(S[i, i]) < 1e-10)
-                    throw new Exception($"Нульовий діагональний елемент на кроці {i}. Матриця вироджена.");
-
-                for (int j = i + 1; j < n; j++)
-                {
-                    double sumRow = 0;
-                    for (int k = 0; k < i; k++)
-                    {
-                        sumRow += S[k, i] * D[k] * S[k, j];
-                    }
-
-                    S[i, j] = (A[i, j] - sumRow) / (D[i] * S[i, i]);
-                }
-
-                Console.WriteLine($"-> Крок {i + 1}. Знайдено рядок {i + 1}. D[{i + 1}] = {D[i]}");
-                PrintTriangularMatrix(S, n);
-                Console.WriteLine();
-            }
-
-            double[] z = new double[n];
-            for (int i = 0; i < n; i++)
-            {
-                double sumST = 0;
-                for (int k = 0; k < i; k++)
-                    sumST += S[k, i] * z[k];
-
-                z[i] = (b[i] - sumST) / S[i, i];
-            }
-            PrintVec(z, "z");
-
-            double[] y = new double[n];
-            for (int i = 0; i < n; i++)
-            {
-                y[i] = z[i] / D[i];
-            }
-
-            double[] x = new double[n];
-            for (int i = n - 1; i >= 0; i--)
-            {
-                double sum = 0;
-                for (int k = i + 1; k < n; k++)
-                {
-                    sum += S[i, k] * x[k];
-                }
-
-                x[i] = (y[i] - sum) / S[i, i];
-            }
-
-            return x;
-        }
-
-        static void PrintTriangularMatrix(double[,] S, int rowsToShow)
-        {
-            int n = S.GetLength(0);
-            for (int i = 0; i < rowsToShow; i++)
-            {
-                Console.Write("  ");
-                for (int j = 0; j < n; j++)
-                {
-                    double val = Math.Abs(S[i, j]) < 1e-10 ? 0.0 : S[i, j];
-                    Console.Write($"{val,8:F4} ");
-                }
-                Console.WriteLine();
-            }
-        }
-
-        static void PrintVec(double[] v, string name)
-        {
-            Console.Write($"{name} = [ ");
-            foreach (var val in v) Console.Write($"{val:F4} ");
-            Console.WriteLine("]");
-        }
+        double[] res = new double[count];
+        double step = (end - start) / (count - 1);
+        for (int i = 0; i < count; i++) res[i] = start + i * step;
+        return res;
     }
 
-    // Метод Якобі
-    public static class JacobiSolver
-    {
-        public static (double[] Solution, int Iterations) Solve(double[,] A, double[] b, double epsilon)
-        {
-            int n = b.Length;
-            double[] x = new double[n];
-            double[] xNew = new double[n];
-            int iterations = 0;
-            double error;
-
-            Console.WriteLine($"{"Ітер.",-6} {"x1",-10} {"x2",-10} {"x3",-10} {"x4",-10} {"Макс.похибка",-15}");
-
-            do
-            {
-                iterations++;
-                for (int i = 0; i < n; i++)
-                {
-                    double sum = 0;
-                    for (int j = 0; j < n; j++)
-                    {
-                        if (i != j) sum += A[i, j] * x[j];
-                    }
-                    xNew[i] = (b[i] - sum) / A[i, i];
-                }
-
-                error = 0;
-                for (int i = 0; i < n; i++)
-                {
-                    double diff = Math.Abs(xNew[i] - x[i]);
-                    if (diff > error) error = diff;
-                }
-
-                Console.Write($"{iterations,-6} ");
-                for(int i=0; i<n; i++) Console.Write($"{xNew[i],-10:F5} ");
-                Console.WriteLine($"{error,-15:E4}");
-
-                Array.Copy(xNew, x, n);
-
-                if (iterations > 1000)
-                {
-                    Console.WriteLine("Перевищено ліміт ітерацій!");
-                    break;
-                }
-
-            } while (error > epsilon);
-
-            return (x, iterations);
-        }
-    }
+    static void PrintHeader(string t) => Console.WriteLine($"\n=== {t} ===");
 }
