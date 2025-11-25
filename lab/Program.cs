@@ -199,7 +199,7 @@ class Program
         int cL = N;
 
         Console.Write($"{"z_i",-6} | {"f(z)",-8} | ");
-        for (int j = 1; j < cL; j++) Console.Write($"{"O" + j,-8} | ");
+        for (int j = 1; j < cL; j++) Console.Write($"{"dx" + j,-8} | ");
         Console.WriteLine("\n" + new string('-', 10 + cL * 11));
 
         for (int i = 0; i < rL; i++)
