@@ -18,16 +18,13 @@ namespace Lab4Spline
             };
             double[] yNodes = xNodes.Select(x => Math.Sqrt(x)).ToArray();
 
-            Console.WriteLine("=============================================");
-            Console.WriteLine("      ПРИРОДНИЙ КУБІЧНИЙ СПЛАЙН");
-            Console.WriteLine("=============================================");
 
-            Console.WriteLine("\n[1] ВХІДНІ ДАНІ:");
-            Console.WriteLine($"{"i",-3} | {"x_i",-6} | {"y_i = sqrt(x)",-15}");
-            Console.WriteLine(new string('-', 30));
+            Console.WriteLine("\nВХІДНІ ДАНІ");
+            Console.WriteLine($"i   | x_i       | y_i = sqrt(x_i)");
+            Console.WriteLine("----------------------------------");
             for (int i = 0; i < xNodes.Length; i++)
             {
-                Console.WriteLine($"{i,-3} | {xNodes[i],-6:F1} | {yNodes[i],-15:F6}");
+                Console.WriteLine($"{i,-3} | {xNodes[i],-9:F4} | {yNodes[i],-15:F6}");
             }
 
             CubicSpline spline = new CubicSpline(xNodes, yNodes);
@@ -38,15 +35,14 @@ namespace Lab4Spline
             double d1Spline = spline.InterpolateFirstDeriv(xTest);
             double d2Spline = spline.InterpolateSecondDeriv(xTest);
 
-            Console.WriteLine("\n[5] АНАЛІЗ У КОНТРОЛЬНІЙ ТОЧЦІ x = " + xTest);
-            Console.WriteLine(new string('-', 60));
+            Console.WriteLine("\nАНАЛІЗ У КОНТРОЛЬНІЙ ТОЧЦІ x = " + xTest);
             Console.WriteLine($"Точне f(x):            {yExact:F10}");
             Console.WriteLine($"Сплайн S(x):           {ySpline:F10}");
             Console.WriteLine($"Похибка:               {Math.Abs(yExact - ySpline):E4}");
             Console.WriteLine($"Похідна S'(x):         {d1Spline:F6}");
             Console.WriteLine($"Друга похідна S''(x):  {d2Spline:F6}");
 
-            Console.WriteLine("\n[6] ПОБУДОВА ГРАФІКІВ...");
+            Console.WriteLine("\nПОБУДОВА ГРАФІКІВ...");
             var plt = new Plot();
             plt.Title("Cubic Spline vs sqrt(x)");
             plt.XLabel("x"); plt.YLabel("y");
@@ -126,35 +122,27 @@ namespace Lab4Spline
             d = new double[n];
             double[] h = new double[n];
 
-            // 1. Обчислення кроків
-            Console.WriteLine("\n[2] ОБЧИСЛЕННЯ КРОКІВ (h_i):");
-            for (int i = 0; i < n; i++)
-            {
-                h[i] = x[i + 1] - x[i];
-                Console.Write($"h_{i}={h[i]:F2}  ");
-            }
+            Console.WriteLine("\nФОРМУВАННЯ СЛАР (ПРИРОДНИЙ СПЛАЙН)");
+            Console.WriteLine("Граничні умови: c[0] = 0, c[n] = 0");
+            Console.WriteLine("Рівняння для внутрішніх вузлів: A*c[i-1] + C*c[i] + B*c[i+1] = F");
             Console.WriteLine();
+            Console.WriteLine($"No | h_L    | h_R    || Рівняння (A*c + C*c + B*c)                   | = F");
 
-            // 2. Формування СЛАР для c_i
-            double[] alpha = new double[n]; 
+            for (int i = 0; i < n; i++) h[i] = x[i + 1] - x[i];
 
-            Console.WriteLine("\n[3] ФОРМУВАННЯ СЛАР ДЛЯ КОЕФІЦІЄНТІВ c (Моментів):");
-            Console.WriteLine("Рівняння: A[i]*c[i-1] + B[i]*c[i] + D[i]*c[i+1] = F[i]");
-            Console.WriteLine(new string('-', 70));
+            double[] rhs = new double[n];
 
             for (int i = 1; i < n; i++)
             {
-                alpha[i] = 3.0 * ((a[i + 1] - a[i]) / h[i] - (a[i] - a[i - 1]) / h[i - 1]);
+                rhs[i] = 3.0 * ((a[i + 1] - a[i]) / h[i] - (a[i] - a[i - 1]) / h[i - 1]);
 
                 double A_i = h[i - 1];
                 double B_i = 2.0 * (h[i - 1] + h[i]);
                 double D_i = h[i];
 
-                Console.WriteLine($"i={i,-2}: {A_i,5:F2} * c_{i - 1,-2} + {B_i,5:F2} * c_{i,-2} + {D_i,5:F2} * c_{i + 1,-2} = {alpha[i]:F4}");
+                Console.WriteLine($"{i,-2} | {A_i,-6:0.####} | {D_i,-6:0.####} || {A_i:0.####}*c{i - 1} + {B_i:0.####}*c{i} + {D_i:0.####}*c{i + 1,-2}       | = {rhs[i]:F5}");
             }
-            Console.WriteLine("(Граничні умови: c_0 = 0, c_n = 0)");
 
-            // 3. Метод прогонки
             double[] l = new double[n + 1];
             double[] mu = new double[n + 1];
             double[] z = new double[n + 1];
@@ -165,7 +153,7 @@ namespace Lab4Spline
             {
                 l[i] = 2.0 * (x[i + 1] - x[i - 1]) - h[i - 1] * mu[i - 1];
                 mu[i] = h[i] / l[i];
-                z[i] = (alpha[i] - h[i - 1] * z[i - 1]) / l[i];
+                z[i] = (rhs[i] - h[i - 1] * z[i - 1]) / l[i];
             }
 
             l[n] = 1.0; z[n] = 0.0; c[n] = 0.0;
@@ -177,29 +165,34 @@ namespace Lab4Spline
                 d[j] = (c[j + 1] - c[j]) / (3.0 * h[j]);
             }
 
-            // 4. Таблиця коефіцієнтів
-            Console.WriteLine("\n[4] ТАБЛИЦЯ КОЕФІЦІЄНТІВ СПЛАЙНА:");
-            Console.WriteLine($"{"i",-3} | {"Інтервал",-12} | {"a_i",-9} | {"b_i",-9} | {"c_i",-9} | {"d_i",-9}");
-            Console.WriteLine(new string('-', 70));
+            Console.WriteLine("\nТАБЛИЦЯ КОЕФІЦІЄНТІВ");
+            Console.WriteLine($"Int | xi (right) | a          | b          | c          | d");
+            Console.WriteLine("------------------------------------------------------------------------------------------");
+
             for (int i = 0; i < n; i++)
             {
-                Console.WriteLine($"{i,-3} | [{x[i]:F1}; {x[i + 1]:F1}] | {a[i],-9:F4} | {b[i],-9:F4} | {c[i],-9:F4} | {d[i],-9:F4}");
+                Console.WriteLine($"{i + 1,-3} | {x[i + 1],-10:F4} | {a[i],-10:0.#####} | {b[i],-10:0.#####} | {c[i],-10:0.#####} | {d[i],-10:E4}");
             }
 
-            // 5. Аналітичний вигляд (Нове!)
-            Console.WriteLine("\n[5] АНАЛІТИЧНИЙ ВИГЛЯД СПЛАЙНА НА КОЖНОМУ ІНТЕРВАЛІ:");
+            Console.WriteLine(" АНАЛІТИЧНИЙ ВИГЛЯД СПЛАЙНІВ S_i(x)");
+            Console.WriteLine("Формула розкладу навколо лівого кінця (xi):");
             Console.WriteLine("S(x) = a + b(x-xi) + c(x-xi)^2 + d(x-xi)^3");
-            Console.WriteLine(new string('-', 80));
+            Console.WriteLine();
+
             for (int i = 0; i < n; i++)
             {
                 string s_b = b[i] >= 0 ? "+ " : "- ";
                 string s_c = c[i] >= 0 ? "+ " : "- ";
                 string s_d = d[i] >= 0 ? "+ " : "- ";
 
-                string termX = $"(x - {x[i]:F1})";
+                string termX = $"(x - {x[i]:0.##})";
 
-                Console.WriteLine($"Інтервал [{x[i]:F1}; {x[i + 1]:F1}]:");
-                Console.WriteLine($"  S_{i}(x) = {a[i]:F4} {s_b}{Math.Abs(b[i]):F4}*{termX} {s_c}{Math.Abs(c[i]):F4}*{termX}^2 {s_d}{Math.Abs(d[i]):F4}*{termX}^3");
+                Console.Write($"Int {i + 1,-2} [{x[i],4:0.0}; {x[i + 1],4:0.0}]: S(x) = {a[i]:0.####} {s_b}{Math.Abs(b[i]):0.#####}{termX}");
+
+                if (Math.Abs(c[i]) > 1e-9) Console.Write($" {s_c}{Math.Abs(c[i]):0.#####}{termX}^2");
+                if (Math.Abs(d[i]) > 1e-9) Console.Write($" {s_d}{Math.Abs(d[i]):0.##E0}{termX}^3");
+
+                Console.WriteLine();
             }
         }
 
