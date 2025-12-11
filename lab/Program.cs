@@ -120,7 +120,7 @@ public class CubicSpline
         Console.WriteLine("Граничні умови: c[0] = 0, c[n] = 0");
         Console.WriteLine("Рівняння для внутрішніх вузлів: A*c[i-1] + C*c[i] + B*c[i+1] = F");
         Console.WriteLine();
-        Console.WriteLine($"No | h_L    | h_R    || Рівняння (A*c + C*c + B*c)                   | = F");
+        Console.WriteLine($"No || Рівняння (A*c + C*c + B*c)      | = F");
 
         for (int i = 0; i < n; i++) h[i] = x[i + 1] - x[i];
 
@@ -134,7 +134,7 @@ public class CubicSpline
             double B_i = 2.0 * (h[i - 1] + h[i]);
             double D_i = h[i];
 
-            Console.WriteLine($"{i,-2} | {A_i,-6:0.####} | {D_i,-6:0.####} || {A_i:0.####}*c{i - 1} + {B_i:0.####}*c{i} + {D_i:0.####}*c{i + 1,-2}       | = {rhs[i]:F5}");
+            Console.WriteLine($"{i,-2} || {A_i:0.####}*c{i - 1} + {B_i:0.####}*c{i} + {D_i:0.####}*c{i + 1,-2}       | = {rhs[i]:F5}");
         }
 
         double[] l = new double[n + 1];
